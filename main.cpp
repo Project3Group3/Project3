@@ -9,14 +9,14 @@ using namespace std;
 class cases {
 private:
     string date;
-    unsigned char age;          //group     0-9,10-19,...80+
-    char sex;                   //male, female, other, missing
+    char* age;          //group     0-9,10-19,...80+
+    char* sex;                   //male, female, other, missing
     bool hosp;                  //true if hosp, false if not or missing
     bool icu;                   //""
     bool death;                 //true if death, false otherwise
     bool medcond;               //true if has underlying condition
 public:
-    cases(string d, unsigned char a, char s, bool h, bool i, bool dt, bool m) {
+    cases(string d, char* a, char* s, bool h, bool i, bool dt, bool m) {
         date = d;
         age = a;
         sex = s;
@@ -27,6 +27,11 @@ public:
     }
     string getDate();
     bool getDeath();
+    char* getAge();
+    char* getSex();
+    bool getHosp();
+    bool getIcu();
+    bool getMedcond();
 };
 
 string cases::getDate() {
@@ -34,6 +39,21 @@ string cases::getDate() {
 }
 bool cases::getDeath() {
     return death;
+}
+bool cases::getHosp() {
+    return hosp;
+}
+bool cases::getIcu() {
+    return icu;
+}
+bool cases::getMedcond() {
+    return medcond;
+}
+char* cases::getAge() {
+    return age;
+}
+char* cases::getSex() {
+    return sex;
 }
 
 int dateSubtraction(string date1, string date2) {       //hacky because doesnt take year into account
@@ -235,17 +255,20 @@ double Map::deathRateOverTime(string date1, string date2) {
 }
 
 
-/*data loading function  {            //dunno how to handle unsigned char
+int main()  {
+    Map covidMap;
+
     string line;    //dummy first line
-    ifstream file1("COVID-19_Case_Surveillance_Public_Use_Data.csv");
+    ifstream file1("/Users/jkim210/Documents/COVID-19_Case_Surveillance_Public_Use_Data.csv");      //need filepath
+    //ifstream file1("/Users/jkim210/Documents/text.csv");                                          //my small tester file
     string a;       //date
     string b;
     string c;
     string d;
     string e;       //sex
-    unsigned char e2;
+    char* e2;
     string f;       //age group
-    unsigned char f2;
+    char* f2;
     string g;
     string h;       //hosp
     bool h2;
@@ -255,7 +278,7 @@ double Map::deathRateOverTime(string date1, string date2) {
     bool j2;
     string k;       //medcond
     bool k2;
-    if (file1.is_open()) {
+    if (file1.is_open()) {                          //data loader
         getline(file1, line);
         while (getline(file1, a, ',')) {
             getline(file1, b, ',');
@@ -268,6 +291,9 @@ double Map::deathRateOverTime(string date1, string date2) {
             getline(file1, i, ',');
             getline(file1, j, ',');
             getline(file1, k, '\n');
+
+            e2 = &e[0];
+            f2 = &f[0];
 
             if (h == "Unknown" || h == "Missing" || h == "No") {
                 h2 = false;
@@ -293,10 +319,13 @@ double Map::deathRateOverTime(string date1, string date2) {
             else if (k == "Yes")
                 k2 = true;
 
-            map.insertCase(cases(a,e2,f2,h2,i2,j2,k2));
+            covidMap.insertCase(cases(a,f2,e2,h2,i2,j2,k2));
         }
-    }
-}*/
+    } else
+        cout << "cannot open file";
+
+    //give menu options
+}
 
 /*int main() {                  //small hardcoded tester
     Map coronavirus;
