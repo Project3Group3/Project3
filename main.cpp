@@ -33,7 +33,6 @@ public:
     bool getIcu();
     bool getMedcond();
 };
-
 string cases::getDate() {
     return date;
 }
@@ -57,14 +56,16 @@ char* cases::getSex() {
 }
 
 int dateSubtraction(string date1, string date2) {       //hacky because doesnt take year into account
-    int month1 = stoi(date1.substr(5,6));
-    int day1 = stoi(date1.substr(8,9));
-    int month2 = stoi(date2.substr(5,6));
-    int day2 = stoi(date2.substr(8,9));
+    int month1 = stoi(date1.substr(5,2));
+    int day1 = stoi(date1.substr(8,2));
+    int month2 = stoi(date2.substr(5,2));
+    int day2 = stoi(date2.substr(8,2));
     if (month1 > month2) {
         swap(month1, month2);
         swap(day1, day2);
     }
+    else if (day1 > day2)
+        swap(day1, day2);
 
     int sum = 0;
     while (month1 < month2) {
@@ -111,9 +112,11 @@ int dateSubtraction(string date1, string date2) {       //hacky because doesnt t
     sum = sum - day1 + 1 + day2;
     return sum;
 }
-string dateStepping(string date) {                      //hacky because doesnt take year into account   adds 1 to date and returns as yyyy/mm//dd
-    int month = stoi(date.substr(5,6));
-    int day = stoi(date.substr(8,9));
+
+string dateStepping(string date) {                    //adds 1 to date and returns as yyyy/mm/dd
+    int month = stoi(date.substr(5,2));
+    int day = stoi(date.substr(8,2));
+    int year = stoi(date.substr(0,4));
     switch (month) {
         case 1:
             day++;
@@ -200,17 +203,22 @@ string dateStepping(string date) {                      //hacky because doesnt t
             }
             break;
     }
+    if (month > 12) {
+        year++;
+        month = 1;
+    }
     if (day < 10 && month < 10) {
-        return ("2020/0" + to_string(month) + "/0" + to_string(day));
+        return (to_string(year) + "/0" + to_string(month) + "/0" + to_string(day));
     }
     else if (day < 10) {
-        return ("2020/" + to_string(month) + "/0" + to_string(day));
+        return (to_string(year) + "/" + to_string(month) + "/0" + to_string(day));
     }
     else if (month < 10) {
-        return ("2020/0" + to_string(month) + "/" + to_string(day));
+        return (to_string(year) + "/0" + to_string(month) + "/" + to_string(day));
     }
-    return ("2020/" + to_string(month) + "/" + to_string(day));
+    return (to_string(year) + "/" + to_string(month) + "/" + to_string(day));
 }
+
 
 class Map {
 //private:
@@ -220,6 +228,8 @@ public:
     int deathsOverTime(string date1, string date2);
     int casesOverTime(string date1, string date2);
     double deathRateOverTime(string date1, string date2);
+
+    int deathsWithMedcondOT(string date1, string date2);
 };
 
 
@@ -243,6 +253,19 @@ int Map::casesOverTime(string date1, string date2) {
     for (int i = 0; i < length; i++) {
         size += map[date1][true].size();
         size += map[date1][false].size();
+        date1 = dateStepping(date1);
+    }
+    return size;
+}
+
+int Map::deathsWithMedcondOT(string date1, string date2) {
+    int size = 0;
+    int length = dateSubtraction(date1, date2);
+    for (int i = 0; i < length; i++) {
+        for (int j = 0; j < map[date1][true].size(); j++) {
+            if (map[date1][true][j].getMedcond())
+                size++;
+        }
         date1 = dateStepping(date1);
     }
     return size;
@@ -278,6 +301,8 @@ int main()  {
     bool j2;
     string k;       //medcond
     bool k2;
+
+    string z;       //dummy for ethnicities
     if (file1.is_open()) {                          //data loader
         getline(file1, line);
         while (getline(file1, a, ',')) {
@@ -287,6 +312,9 @@ int main()  {
             getline(file1, e, ',');
             getline(file1, f, ',');
             getline(file1, g, ',');
+            if (!(g == "Unknown" || g == "NA" || g == "Hispanic/Latino")) {
+                getline(file1, z, ',');
+            }
             getline(file1, h, ',');
             getline(file1, i, ',');
             getline(file1, j, ',');
@@ -310,8 +338,9 @@ int main()  {
             if (j == "Unknown" || j == "Missing" || j == "No") {
                 j2 = false;
             }
-            else if (j == "Yes")
+            if (j == "Yes") {
                 j2 = true;
+            }
 
             if (k == "Unknown" || k == "Missing" || k == "No") {
                 k2 = false;
@@ -321,8 +350,14 @@ int main()  {
 
             covidMap.insertCase(cases(a,f2,e2,h2,i2,j2,k2));
         }
-    } else
+    }
+    else
         cout << "cannot open file";
+
+    cout << covidMap.deathsOverTime("2020/01/01", "2020/12/31");
+    cout << "\n";
+    cout << covidMap.casesOverTime("2020/01/01", "2020/12/31");
+    //cout << covidMap.deathsWithMedcondOT("2020/01/01", "2020/12/31");
 
     //give menu options
 }
