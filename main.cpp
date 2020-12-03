@@ -4,6 +4,9 @@
 #include <string>
 #include <fstream>
 #include <sstream>
+#include <queue>
+#include <stack>
+#include <functional>
 using namespace std;
 
 class cases {
@@ -15,6 +18,16 @@ private:
     bool icu;                   //""
     bool death;                 //true if death, false otherwise
     bool medcond;               //true if has underlying condition
+    bool risk;                   //holds the patient's risk factor
+    int ID;                     //Holds an ID for the patient to differentiate cases
+
+    static int IDcntr;      //Contains a counter 
+
+    //Added by Ryan Roth on 12/3/2020
+    //Name: calculateRisk()
+    //Purpose: uses the information given about a case's subject to estimate their risk of death for COVID-19
+    void calculateRisk();
+
 public:
     cases(string d, string a, string s, bool h, bool i, bool dt, bool m) {
         date = d;
@@ -24,6 +37,9 @@ public:
         icu = i;
         death = dt;
         medcond = m;
+        calculateRisk();
+        ID = IDcntr;
+        IDcntr++;
     }
     string getDate();
     bool getDeath();
@@ -32,6 +48,16 @@ public:
     bool getHosp();
     bool getIcu();
     bool getMedcond();
+    int getRisk();
+    
+    bool operator()(const cases& case1, const cases& case2) { //compares two cases, returns true if case1 > case2 signifying that case1 has a higher risk factor.
+        if (abs(case1.risk - case2.risk) < 0.00000001) { //the risk factors are equal, sort by greatest ID
+            return case1.ID > case2.ID;
+        }
+        else { //if the risks are not equal, return true when risk of case1 is greater
+            return case1.risk > case2.risk;
+        }
+    }
 };
 string cases::getDate() {
     return date;
@@ -53,6 +79,80 @@ string cases::getAge() {
 }
 string cases::getSex() {
     return sex;
+}
+
+int cases::getRisk() {
+    return risk;
+}
+
+int cases::IDcntr = 0;
+
+void cases::calculateRisk() { //Create a more complex Risk caclulation function
+    risk = 0;
+    //age is the single biggest factor in determining someone's death risk for COVID-19, so it will be weighted the highest
+    if (this->age == "0 - 9 Years") {
+        risk += 0;
+    }
+    else if (this->age == "10 - 19 Years") {
+        risk += 0;
+    }
+    else if (this->age == "20 - 29 Years") {
+        //if the patient has a medical condition, there will be a risk of death albeit relatively small
+        if (medcond) {
+            risk += 2;
+        }
+        else {
+            risk += 0;
+        }
+    }
+    else if (this->age == "30 - 39 Years") {
+        if (medcond) {
+            risk += 3;
+        }
+        else {
+            risk += 1;
+        }
+    }
+    else if (this->age == "40 - 49 Years") {
+        if (medcond) {
+            risk += 4;
+        }
+        else {
+            risk += 2;
+        }
+    }
+    else if (this->age == "50 - 59 Years") {
+        if (medcond) {
+            risk += 5;
+        }
+        else {
+            risk += 3;
+        }
+    }
+    else if (this->age == "60 - 69 Years") {
+        if (medcond) {
+            risk += 7;
+        }
+        else {
+            risk += 5;
+        }
+    }
+    else if (this->age == "70 - 79 Years") {
+        if (medcond) {
+            risk += 9;
+        }
+        else {
+            risk += 5;
+        }
+    }
+    else if (this->age == "80+ Years") {
+        if (medcond) {
+            risk += 10;
+        }
+        else {
+            risk += 9;
+        }
+    }
 }
 
 int dateSubtraction(string date1, string date2) {       //hacky because doesnt take year into account
@@ -245,6 +345,8 @@ public:
 
     int casesWithICU(string date1, string date2);
     int deathsWithICU(string date1, string date2);
+
+    friend class CovidHeap; //allow covidHeap to access the map without making it accessible to main
 };
 
 
@@ -560,6 +662,76 @@ double Map::deathRateOverTime(string date1, string date2) {
     return deaths/cases;
 }
 
+//The date class is used in the heap data structure and it is stored at the first level heap. A date object contains the number of deaths for a given day as a variable as well as
+//a heap containing all cases for a day with their priority set to their risk of death to COVID-19
+class Date {
+private:
+    string date;
+    int deaths;
+    priority_queue<cases, vector<cases>, cases> caseHeap; //heap that stores the cases by their risk factor
+    stack<cases> removeStack; //objects that are removed from the heap are stored here to be added back after the operation is finished.
+
+public:
+    Date(string date, int deaths); //initializes a date with the date, deaths, and empty heap and stack.
+    void insertCase(cases& c); //insert an individual case into the date's case heap. Called from a CovidHeap object.
+
+
+    //returns true when date1 has more deaths than date2
+    bool operator()(const Date& date1, const Date& date2) {
+        return date1.deaths > date2.deaths;
+    }
+};
+
+Date::Date(string date, int deaths) {
+    this->date = date;
+    this->deaths = deaths;
+}
+
+void Date::insertCase(cases& c) {
+    caseHeap.push(c);
+}
+
+
+//The CovidHeap class contains a heap of date heaps organized by deaths on a given date.
+class CovidHeap {
+private:
+    priority_queue<Date, vector<Date>, Date> dateHeap; //contains a heap of dates sorted by deaths
+    stack<Date> removeStack; //objects removed are stored here to be added back post-operation.
+
+    //Status: Finished
+    void insertDate(unordered_map<bool, vector<cases>>& dateMap, string date); //pass in a specific date from the CovidMap as a parameter to create a date object and insert all of the cases.
+public:
+    //Constructor
+    //Status: Finished
+    CovidHeap(Map& covidMap);
+
+    //publicly accessible algorithms
+    
+    
+};
+
+CovidHeap::CovidHeap(Map& covidMap) {
+    //iterate through the top level of the covid map and call insert Date for each member
+    for (auto iter = covidMap.map.begin(); iter != covidMap.map.end(); iter++) {
+        insertDate(iter->second, iter->first);
+    }
+}
+
+void CovidHeap::insertDate(unordered_map<bool, vector<cases>>& dateMap, string date) {
+    Date newDate(date, dateMap[true].size()); //create a new date with the deaths corresponding to the given date
+    vector<cases>& caseVectT = dateMap[true];
+    vector<cases>& caseVectF = dateMap[false];
+
+    for (auto iter = caseVectT.begin(); iter != caseVectT.end(); iter++) {
+        newDate.insertCase(*iter); //add each case to the date object
+    }
+    for (auto iter = caseVectF.begin(); iter != caseVectF.end(); iter++) {
+        newDate.insertCase(*iter);
+    }
+
+    dateHeap.push(newDate);
+}
+
 
 int main()  {
     Map covidMap;
@@ -641,7 +813,6 @@ int main()  {
     //menu options
 
     bool runLoop = true;
-
 
     int choice;
     int choice2;
