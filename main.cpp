@@ -55,7 +55,7 @@ string cases::getSex() {
     return sex;
 }
 
-int dateSubtraction(string date1, string date2) {       //hacky because doesnt take year into account
+/*int dateSubtraction(string date1, string date2) {       //hacky because doesnt take year into account
     int month1 = stoi(date1.substr(5,2));
     int day1 = stoi(date1.substr(8,2));
     int month2 = stoi(date2.substr(5,2));
@@ -109,6 +109,168 @@ int dateSubtraction(string date1, string date2) {       //hacky because doesnt t
         }
         month1++;
     }
+    sum = sum - day1 + 1 + day2;
+    return sum;
+}*/
+
+int dateSubtraction(string date1, string date2) {       //fixing year was a pain in the ass
+    int year1 = stoi(date1.substr(0,4));
+    int month1 = stoi(date1.substr(5,2));
+    int day1 = stoi(date1.substr(8,2));
+    int year2 = stoi(date2.substr(0,4));
+    int month2 = stoi(date2.substr(5,2));
+    int day2 = stoi(date2.substr(8,2));
+    if (year1 > year2) {
+        swap(year1, year2);
+        swap(month1,month2);
+        swap(day1, day2);
+    }
+    else if (month1 > month2 && year1 == year2) {
+        swap(month1, month2);
+        swap(day1, day2);
+    }
+    else if (day1 > day2 && year1 == year2 && month1 == month2)
+        swap(day1, day2);
+
+    int sum = 0;
+    int yearDiff = 0;
+    if (year2>year1) {
+        yearDiff = year2 - year1;
+
+        for (int i = 0; i < yearDiff; i++) {
+            if ((year1 + i) % 4 == 0)
+                sum += 366;
+            else
+                sum += 365;
+        }
+
+        while (month1 > month2) {
+            switch (month1) {
+                case 1:
+                    sum -= 31;
+                    break;
+                case 2:
+                    sum -= 29;
+                    break;
+                case 3:
+                    sum -= 31;
+                    break;
+                case 4:
+                    sum -= 30;
+                    break;
+                case 5:
+                    sum -= 31;
+                    break;
+                case 6:
+                    sum -= 30;
+                    break;
+                case 7:
+                    sum -= 31;
+                    break;
+                case 8:
+                    sum -= 31;
+                    break;
+                case 9:
+                    sum -= 30;
+                    break;
+                case 10:
+                    sum -= 31;
+                    break;
+                case 11:
+                    sum -= 30;
+                    break;
+                case 12:
+                    sum -= 31;
+                    break;
+            }
+            month1--;
+        }
+        while (month1 < month2) {
+            switch (month1) {
+                case 1:
+                    sum += 31;
+                    break;
+                case 2:
+                    sum += 29;
+                    break;
+                case 3:
+                    sum += 31;
+                    break;
+                case 4:
+                    sum += 30;
+                    break;
+                case 5:
+                    sum += 31;
+                    break;
+                case 6:
+                    sum += 30;
+                    break;
+                case 7:
+                    sum += 31;
+                    break;
+                case 8:
+                    sum += 31;
+                    break;
+                case 9:
+                    sum += 30;
+                    break;
+                case 10:
+                    sum += 31;
+                    break;
+                case 11:
+                    sum += 30;
+                    break;
+                case 12:
+                    sum += 31;
+                    break;
+            }
+            month1++;
+        }
+    }
+    else {
+        while (month1 < month2) {
+            switch (month1) {
+                case 1:
+                    sum += 31;
+                    break;
+                case 2:
+                    sum += 29;
+                    break;
+                case 3:
+                    sum += 31;
+                    break;
+                case 4:
+                    sum += 30;
+                    break;
+                case 5:
+                    sum += 31;
+                    break;
+                case 6:
+                    sum += 30;
+                    break;
+                case 7:
+                    sum += 31;
+                    break;
+                case 8:
+                    sum += 31;
+                    break;
+                case 9:
+                    sum += 30;
+                    break;
+                case 10:
+                    sum += 31;
+                    break;
+                case 11:
+                    sum += 30;
+                    break;
+                case 12:
+                    sum += 31;
+                    break;
+            }
+            month1++;
+        }
+    }
+
     sum = sum - day1 + 1 + day2;
     return sum;
 }
@@ -565,7 +727,7 @@ int main()  {
     Map covidMap;
 
     string line;    //dummy first line
-    ifstream file1("/Users/jkim210/Documents/COVID-19_Case_Surveillance_Public_Use_Data.csv");      //need filepath
+    ifstream file1("COVID-19_Case_Surveillance_Public_Use_Data.csv");      //need filepath
     //ifstream file1("/Users/jkim210/Documents/text.csv");                                          //my small tester file
     string a;       //date
     string b;
@@ -636,7 +798,7 @@ int main()  {
         }
     }
     else
-        cout << "cannot open file";
+        cout << "cannot open file" << "\n";
 
     //menu options
 
@@ -797,7 +959,7 @@ int main()  {
 
                 switch (choice2) {
                     case 1:
-                        cout << "Number of cases between " << date1 << " and " << date2 << ": "
+                        cout << "Number of cases in the US is" << ": "
                              << covidMap.casesOverTime(date1, date2) << "\n\n";
                         break;
                     case 2:
