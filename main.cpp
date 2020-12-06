@@ -884,7 +884,7 @@ void CovidHeap::topkDeathPercentFull(int k) {
     double deathPercent = 0;
     for (auto iter = caseVect.begin(); iter != caseVect.end(); iter++) {
         //if the case resulted in death, increment the death counter
-        if (iter->getDeath) {
+        if (iter->getDeath()) {
             deathSum++;
         }
     }
@@ -901,7 +901,7 @@ void CovidHeap::topkDeathPercentDate(string date, int k) {
     double deathSum = 0;
     double deathPercent = 0;
     for (auto iter = caseVect.begin(); iter != caseVect.end(); iter++) {
-        if (iter->getDeath) {
+        if (iter->getDeath()) {
             deathSum++;
         }
     }
@@ -958,8 +958,8 @@ void CovidHeap::topkICUPercentFull(int k) {
     }
     ICUPercent = ICUSum / k;
     ICUPercent *= 100;
-    cout << "The percentage of the top " << k << " most high risk cases that resulted in hospitalization is: ";
-    cout << fixed << setprecision(2) << ICUPercent;
+    cout << "The percentage of the top " << k << " most high risk cases that resulted in intensive care is: ";
+    cout << fixed << setprecision(2) << ICUPercent << endl;
 }
 
 void CovidHeap::topkICUPercentDate(string date, int k) {
@@ -974,8 +974,8 @@ void CovidHeap::topkICUPercentDate(string date, int k) {
     }
     ICUPercent = ICUSum / k;
     ICUPercent *= 100;
-    cout << "The percentage of the top " << k << " most high risk cases that resulted in hospitalization is: ";
-    cout << fixed << setprecision(2) << ICUPercent;
+    cout << "The percentage of the top " << k << " most high risk cases that resulted in intensive care is: ";
+    cout << fixed << setprecision(2) << ICUPercent << endl;
 }
 
 CovidHeap::CovidHeap(Map& covidMap) {
@@ -1210,8 +1210,8 @@ int main()  {
 
                             auto stopMap = chrono::high_resolution_clock::now();
 
-                            auto durationMap = chrono::duration_cast<chrono::microseconds>(stopMap - startMap);
-                            cout << "The time elapsed to calculate the map output was: " << durationMap.count() << " microseconds" << endl;
+                            auto durationMap = chrono::duration_cast<chrono::milliseconds>(stopMap - startMap);
+                            cout << "The time elapsed to calculate the map output was: " << durationMap.count() << " milliseconds" << endl;
 
                             //call functions using the heap
                             cout << "The output using the heap structure is: " << endl;
@@ -1221,9 +1221,10 @@ int main()  {
                             covidHeap.topkICUPercentDate(date1, k);
                             auto stopHeap = chrono::high_resolution_clock::now();
 
-                            auto durationHeap = chrono::duration_cast<chrono::microseconds>(stopMap - startMap);
+                            auto durationHeap = chrono::duration_cast<chrono::milliseconds>(stopHeap - startHeap);
 
-                            cout << "The time elapsed to calculate the heap output was: " << durationHeap.count() << "microseconds" << endl;
+                            cout << "The time elapsed to calculate the heap output was: " << durationHeap.count() << " milliseconds" << endl;
+                            cout << endl;
 
                         }
                         break;
@@ -1364,8 +1365,8 @@ int main()  {
 
                             auto stopMap = chrono::high_resolution_clock::now();
 
-                            auto durationMap = chrono::duration_cast<chrono::microseconds>(stopMap - startMap);
-                            cout << "The time elapsed to calculate the map output was: " << durationMap.count() << " microseconds" << endl;
+                            auto durationMap = chrono::duration_cast<chrono::milliseconds>(stopMap - startMap);
+                            cout << "The time elapsed to calculate the map output was: " << durationMap.count() << " milliseconds" << endl;
 
                             //call functions using the heap
                             cout << "The output using the heap structure is: " << endl;
@@ -1375,9 +1376,10 @@ int main()  {
                             covidHeap.topkICUPercentFull(k);
                             auto stopHeap = chrono::high_resolution_clock::now();
                             
-                            auto durationHeap = chrono::duration_cast<chrono::microseconds>(stopMap - startMap);
+                            auto durationHeap = chrono::duration_cast<chrono::milliseconds>(stopHeap - startHeap);
 
-                            cout << "The time elapsed to calculate the heap output was: " << durationHeap.count() << "microseconds" << endl;
+                            cout << "The time elapsed to calculate the heap output was: " << durationHeap.count() << "milliseconds" << endl;
+                            cout << endl;
                             
                         }
                         break;
