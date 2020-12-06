@@ -4,6 +4,11 @@
 #include <string>
 #include <fstream>
 #include <sstream>
+#include <queue>
+#include <stack>
+#include <functional>
+#include <iomanip>
+#include <unordered_set>
 using namespace std;
 
 class cases {
@@ -15,6 +20,16 @@ private:
     bool icu;                   //""
     bool death;                 //true if death, false otherwise
     bool medcond;               //true if has underlying condition
+    bool risk;                   //holds the patient's risk factor
+    int ID;                     //Holds an ID for the patient to differentiate cases
+
+    static int IDcntr;      //Contains a counter 
+
+    //Added by Ryan Roth on 12/3/2020
+    //Name: calculateRisk()
+    //Purpose: uses the information given about a case's subject to estimate their risk of death for COVID-19
+    void calculateRisk();
+
 public:
     cases(string d, string a, string s, bool h, bool i, bool dt, bool m) {
         date = d;
@@ -24,6 +39,31 @@ public:
         icu = i;
         death = dt;
         medcond = m;
+        calculateRisk();
+        ID = IDcntr;
+        IDcntr++;
+    }
+    cases(string d, string a, string s, bool h, bool i, bool dt, bool m, int id) {              //FOR ALGORITHM ONLY
+        date = d;
+        age = a;
+        sex = s;
+        hosp = h;
+        icu = i;
+        death = dt;
+        medcond = m;
+        risk = -1;
+        ID = id;
+    }
+    cases() {
+        date = "";
+        age = "";
+        sex = "";
+        hosp = false;
+        icu = false;
+        death = false;
+        medcond = false;
+        risk = 0;
+        ID = -1;
     }
     string getDate();
     bool getDeath();
@@ -32,6 +72,18 @@ public:
     bool getHosp();
     bool getIcu();
     bool getMedcond();
+    int getRisk();
+
+    bool equals(cases cases2);
+
+    bool operator()(const cases& case1, const cases& case2) { //compares two cases, returns true if case1 > case2 signifying that case1 has a higher risk factor.
+        if (abs(case1.risk - case2.risk) < 0.00000001) { //the risk factors are equal, sort by greatest ID
+            return case1.ID > case2.ID;
+        }
+        else { //if the risks are not equal, return true when risk of case1 is greater
+            return case1.risk > case2.risk;
+        }
+    }
 };
 string cases::getDate() {
     return date;
@@ -55,65 +107,85 @@ string cases::getSex() {
     return sex;
 }
 
-/*int dateSubtraction(string date1, string date2) {       //hacky because doesnt take year into account
-    int month1 = stoi(date1.substr(5,2));
-    int day1 = stoi(date1.substr(8,2));
-    int month2 = stoi(date2.substr(5,2));
-    int day2 = stoi(date2.substr(8,2));
-    if (month1 > month2) {
-        swap(month1, month2);
-        swap(day1, day2);
-    }
-    else if (day1 > day2)
-        swap(day1, day2);
+int cases::getRisk() {
+    return risk;
+}
 
-    int sum = 0;
-    while (month1 < month2) {
-        switch (month1) {
-            case 1:
-                sum += 31;
-                break;
-            case 2:
-                sum += 29;
-                break;
-            case 3:
-                sum += 31;
-                break;
-            case 4:
-                sum += 30;
-                break;
-            case 5:
-                sum += 31;
-                break;
-            case 6:
-                sum += 30;
-                break;
-            case 7:
-                sum += 31;
-                break;
-            case 8:
-                sum += 31;
-                break;
-            case 9:
-                sum += 30;
-                break;
-            case 10:
-                sum += 31;
-                break;
-            case 11:
-                sum += 30;
-                break;
-            case 12:
-                sum += 31;
-                break;
+int cases::IDcntr = 0;
+
+void cases::calculateRisk() { //Create a more complex Risk caclulation function
+    risk = 0;
+    //age is the single biggest factor in determining someone's death risk for COVID-19, so it will be weighted the highest
+    if (this->age == "0 - 9 Years") {
+        risk += 0;
+    }
+    else if (this->age == "10 - 19 Years") {
+        risk += 0;
+    }
+    else if (this->age == "20 - 29 Years") {
+        //if the patient has a medical condition, there will be a risk of death albeit relatively small
+        if (medcond) {
+            risk += 2;
         }
-        month1++;
+        else {
+            risk += 0;
+        }
     }
-    sum = sum - day1 + 1 + day2;
-    return sum;
-}*/
+    else if (this->age == "30 - 39 Years") {
+        if (medcond) {
+            risk += 3;
+        }
+        else {
+            risk += 1;
+        }
+    }
+    else if (this->age == "40 - 49 Years") {
+        if (medcond) {
+            risk += 4;
+        }
+        else {
+            risk += 2;
+        }
+    }
+    else if (this->age == "50 - 59 Years") {
+        if (medcond) {
+            risk += 5;
+        }
+        else {
+            risk += 3;
+        }
+    }
+    else if (this->age == "60 - 69 Years") {
+        if (medcond) {
+            risk += 7;
+        }
+        else {
+            risk += 5;
+        }
+    }
+    else if (this->age == "70 - 79 Years") {
+        if (medcond) {
+            risk += 9;
+        }
+        else {
+            risk += 5;
+        }
+    }
+    else if (this->age == "80+ Years") {
+        if (medcond) {
+            risk += 10;
+        }
+        else {
+            risk += 9;
+        }
+    }
+}
 
-int dateSubtraction(string date1, string date2) {       //fixing year was a pain in the ass
+bool cases::equals(cases cases2) {
+    return (this->getDate() == cases2.getDate() && this->getSex() == cases2.getSex() && this->getAge() == cases2.getAge() && this->getDeath() == cases2.getDeath() && this->getHosp() == cases2.getHosp() && this->getIcu() == cases2.getIcu() && this->getMedcond() == cases2.getMedcond() && this->getRisk() == cases2.getRisk());
+}
+
+int dateSubtraction(string date1, string date2) {
     int year1 = stoi(date1.substr(0,4));
     int month1 = stoi(date1.substr(5,2));
     int day1 = stoi(date1.substr(8,2));
@@ -385,6 +457,12 @@ string dateStepping(string date) {                    //adds 1 to date and retur
 class Map {
 private:
     unordered_map<string, unordered_map<bool, vector<cases>>> map;
+
+    //returns a vector of the top k most at risk cases for the whole data set
+    void topkFull(vector<cases>& caseVect, int k);
+    //returns a vector of the top k most at risk cases for a single day
+    void topkDate(vector<cases>& caseVect, int k);
+
 public:
     void insertCase(cases c);
 
@@ -407,6 +485,20 @@ public:
 
     int casesWithICU(string date1, string date2);
     int deathsWithICU(string date1, string date2);
+
+    friend class CovidHeap; //allow covidHeap to access the map without making it accessible to main
+
+    vector<cases> algorithm(string date1, string date2, int k);
+    //unordered_set<cases> algorithm(string date1, string date2, int k);
+
+    void topkDeathPercentFull(int k);
+    void topkDeathPercentDate(string date, int k);
+
+    void topkHospPercentFull(int k);
+    void topkHospPercentDate(string date, int k);
+
+    void topkICUPercentFull(int k);
+    void topkICUPercentDate(string date, int k);
 };
 
 
@@ -722,13 +814,376 @@ double Map::deathRateOverTime(string date1, string date2) {
     return deaths/cases;
 }
 
+//The date class is used in the heap data structure and it is stored at the first level heap. A date object contains the number of deaths for a given day as a variable as well as
+//a heap containing all cases for a day with their priority set to their risk of death to COVID-19
+class Date {
+private:
+    string date;
+    int deaths;
+    vector<cases> caseHeap; //heap that stores the cases by their risk factor
+    stack<cases> removeStack; //objects that are removed from the heap are stored here to be added back after the operation is finished.
+    //fills a heap with the top k most at risk cases from a single date
+    void topkDate(vector<cases>& heap, int k);
+    friend class CovidHeap;
+public:
+    Date(string date, int deaths); //initializes a date with the date, deaths, and empty heap and stack.
+    Date() {
+        date = "";
+        deaths = 0;
+    }
+    void insertCase(cases& c); //insert an individual case into the date's case heap. Called from a CovidHeap object.
+
+
+    //returns true when date1 has more deaths than date2
+    bool operator()(const Date& date1, const Date& date2) {
+        return date1.deaths > date2.deaths;
+    }
+
+};
+
+Date::Date(string date, int deaths) {
+    this->date = date;
+    this->deaths = deaths;
+}
+
+void Date::insertCase(cases& c) {
+    caseHeap.push_back(c);
+    push_heap(caseHeap.begin(), caseHeap.end(), cases());
+}
+
+void Date::topkDate(vector<cases>& heap, int k) {
+    int cntr = 0;
+    while (cntr < k && !caseHeap.empty()) {
+        //while the case heap is not empty, pop the top k cases off and put them in the return heap
+        removeStack.push(caseHeap.front());
+        heap.push_back(caseHeap.front());
+        push_heap(heap.begin(), heap.end(), cases());
+        pop_heap(caseHeap.begin(), caseHeap.end(), cases());
+        caseHeap.pop_back();
+        cntr++;
+    }
+    while (!removeStack.empty()) {
+        //empty the removestack back into the heap
+        caseHeap.push_back(removeStack.top());
+        push_heap(caseHeap.begin(), caseHeap.end(), cases());
+        removeStack.pop();
+    }
+}
+
+//The CovidHeap class contains a heap of date heaps organized by deaths on a given date.
+class CovidHeap {
+private:
+    vector<Date> dateHeap; //contains a heap of dates sorted by death
+
+
+    //Status: Finished
+    void insertDate(unordered_map<bool, vector<cases>>& dateMap, string date); //pass in a specific date from the CovidMap as a parameter to create a date object and insert allof the cases.
+    //fills the vector with the top k most at risk cases from the full data set.
+    void topkFull(vector<cases>& caseVect, int k);
+    void topkDate(vector<cases>& caseVect, int k, string d);
+
+public:
+    //Constructor
+    CovidHeap(Map& covidMap);
+
+    //publicly accessible algorithms
+
+    //these functions calculate and display the percent of cases resulting in deaths for the top k cases
+    void topkDeathPercentFull(int k);
+    void topkDeathPercentDate(string date, int k);
+
+    void topkHospPercentFull(int k);
+    void topkHospPercentDate(string date, int k);
+
+    void topkICUPercentFull(int k);
+    void topkICUPercentDate(string date, int k);
+
+};
+
+void CovidHeap::topkDeathPercentFull(int k) {
+    vector<cases> caseVect;
+    topkFull(caseVect, k);
+    double deathSum = 0;
+    double deathPercent = 0;
+    for (auto iter = caseVect.begin(); iter != caseVect.end(); iter++) {
+        //if the case resulted in death, increment the death counter
+        if (iter->getDeath()) {
+            deathSum++;
+        }
+    }
+
+    deathPercent = deathSum / k;
+    deathPercent *= 100;
+    cout << "The percentage of the top " << k << " most high risk cases that resulted in death is: ";
+    cout << fixed << setprecision(2) << deathPercent << endl;
+}
+
+void CovidHeap::topkDeathPercentDate(string date, int k) {
+    vector<cases> caseVect;
+    topkDate(caseVect, k, date);
+    double deathSum = 0;
+    double deathPercent = 0;
+    for (auto iter = caseVect.begin(); iter != caseVect.end(); iter++) {
+        if (iter->getDeath()) {
+            deathSum++;
+        }
+    }
+
+    deathPercent = deathSum / k;
+    deathPercent *= 100;
+    cout << "The percentage of the top " << k << " most high risk cases that resulted in death is: ";
+    cout << fixed << setprecision(2) << deathPercent << endl;
+}
+
+void CovidHeap::topkHospPercentFull(int k) {
+    vector<cases> caseVect;
+    topkFull(caseVect, k);
+    double hospSum = 0;
+    double hospPercent = 0;
+    for (auto iter = caseVect.begin(); iter != caseVect.end(); iter++) {
+        if (iter->getHosp()) {
+            hospSum++;
+        }
+    }
+
+    hospPercent = hospSum / k;
+    hospPercent *= 100;
+    cout << "The percentage of the top " << k << " most high risk cases that resulted in hospitilization is: ";
+    cout << fixed << setprecision(2) << hospPercent << endl;
+}
+
+void CovidHeap::topkHospPercentDate(string date, int k) {
+    vector<cases> caseVect;
+    topkDate(caseVect, k, date);
+    double hospSum = 0;
+    double hospPercent = 0;
+    for (auto iter = caseVect.begin(); iter != caseVect.end(); iter++) {
+        if (iter->getHosp()) {
+            hospSum++;
+        }
+    }
+
+    hospPercent = hospSum / k;
+    hospPercent *= 100;
+    cout << "The percentage of the top " << k << " most high risk cases that resulted in hospitilization is: ";
+    cout << fixed << setprecision(2) << hospPercent << endl;
+}
+
+void CovidHeap::topkICUPercentFull(int k) {
+    vector<cases> caseVect;
+    topkFull(caseVect, k);
+    double ICUSum = 0;
+    double ICUPercent = 0;
+    for (auto iter = caseVect.begin(); iter != caseVect.end(); iter++) {
+        if (iter->getIcu()) {
+            ICUSum++;
+        }
+    }
+    ICUPercent = ICUSum / k;
+    ICUPercent *= 100;
+    cout << "The percentage of the top " << k << " most high risk cases that resulted in hospitalization is: ";
+    cout << fixed << setprecision(2) << ICUPercent;
+}
+
+void CovidHeap::topkICUPercentDate(string date, int k) {
+    vector<cases> caseVect;
+    topkDate(caseVect, k, date);
+    double ICUSum = 0;
+    double ICUPercent = 0;
+    for (auto iter = caseVect.begin(); iter != caseVect.end(); iter++) {
+        if (iter->getIcu()) {
+            ICUSum++;
+        }
+    }
+    ICUPercent = ICUSum / k;
+    ICUPercent *= 100;
+    cout << "The percentage of the top " << k << " most high risk cases that resulted in hospitalization is: ";
+    cout << fixed << setprecision(2) << ICUPercent;
+}
+
+CovidHeap::CovidHeap(Map& covidMap) {
+    //iterate through the top level of the covid map and call insert Date for each member
+    for (auto iter = covidMap.map.begin(); iter != covidMap.map.end(); iter++) {
+        insertDate(iter->second, iter->first);
+    }
+    make_heap(dateHeap.begin(), dateHeap.end(), Date());
+}
+
+void CovidHeap::insertDate(unordered_map<bool, vector<cases>>& dateMap, string date) {
+    Date newDate(date, dateMap[true].size()); //create a new date with the deaths corresponding to the given date
+    vector<cases>& caseVectT = dateMap[true];
+    vector<cases>& caseVectF = dateMap[false];
+
+    for (auto iter = caseVectT.begin(); iter != caseVectT.end(); iter++) {
+        newDate.insertCase(*iter); //add each case to the date object
+    }
+    for (auto iter = caseVectF.begin(); iter != caseVectF.end(); iter++) {
+        newDate.insertCase(*iter);
+    }
+
+    dateHeap.push_back(newDate);
+}
+
+void CovidHeap::topkFull(vector<cases>& caseVect, int k) {
+    vector<cases> heap;
+    //Get the top k cases from each date onto a heap
+    for (auto iter = dateHeap.begin(); iter != dateHeap.end(); iter++) {
+        iter->topkDate(heap, k);
+    }
+    int cntr = 0;
+    while (cntr < k &&  !heap.empty()) {
+        caseVect.push_back(heap.front());
+        pop_heap(heap.begin(), heap.end(), cases());
+        heap.pop_back();
+        cntr++;
+    }
+}
+
+void CovidHeap::topkDate(vector<cases>& caseVect, int k, string d) {
+
+    //Find the correct date in the date heap
+    for (auto iter = dateHeap.begin(); iter != dateHeap.end(); iter++) {
+        if (iter->date == d) {
+            iter->topkDate(caseVect, k);
+        }
+    }
+
+}
+
+
+
+
+vector<cases> Map::algorithm(string date1, string date2, int k) {
+    vector<cases> vec;
+    cases smallestCase("2020/01/01", "0 - 9 Years", "Other", false, false, false, false, -1);
+    cases greatestCase = smallestCase;
+    cases case1;
+    string dateBegin = date1;
+    bool inVec = false;
+    int length = dateSubtraction(date1, date2);
+    for (int o = 0; o < k; o++) {                                               //find k largest cases
+        for (int i = 0; i < length; i++) {                                      //running through the dates to find the largest case
+            for (int j = 0; j < map[date1][true].size(); j++) {                 //deaths
+                if (case1(map[date1][true][j], greatestCase)) {                 //current case is bigger than greatest case
+                    for (int a = 0; a < vec.size(); a++) {                      //check if case is already added to vector
+                        if (vec[a].equals(map[date1][true][j]))
+                            inVec = true;
+                    }
+                    if (!inVec)                                                 //if not already in vector, set greatestCase to curr
+                        greatestCase = map[date1][true][j];
+                }
+                inVec = false;
+            }
+            for (int l = 0; l < map[date1][false].size(); l++) {                //lives
+                if (case1(map[date1][false][l], greatestCase)) {
+                    for (int b = 0; b < vec.size(); b++) {
+                        if (vec[b].equals(map[date1][false][l]))                      //case not already added to vector
+                            inVec = true;
+                    }
+                    if (!inVec)
+                        greatestCase = map[date1][false][l];
+                }
+                inVec = false;
+            }
+            date1 = dateStepping(date1);
+        }
+        vec.push_back(greatestCase);
+        greatestCase = smallestCase;
+        date1 = dateBegin;
+    }
+    return vec;
+}
+
+void Map::topkDeathPercentFull(int k) {
+    vector<cases> topK = algorithm("2020/01/01", "2020/10/16", k);                  //hardcoded end date again
+    double deathSum = 0;
+    double deathPercent;
+    for (int i = 0; i < topK.size(); i++) {
+        if (topK[i].getDeath())
+            deathSum++;
+    }
+    deathPercent = deathSum / k;
+    deathPercent *= 100;
+    cout << "The percentage of the top " << k << " most high risk cases that resulted in death is: ";
+    cout << fixed << setprecision(2) << deathPercent << endl;
+}
+
+void Map::topkDeathPercentDate(string date, int k) {
+    vector<cases> topK = algorithm(date, date, k);
+    double deathSum = 0;
+    double deathPercent;
+    for (int i = 0; i < topK.size(); i++) {
+        if (topK[i].getDeath())
+            deathSum++;
+    }
+    deathPercent = deathSum / k;
+    deathPercent *= 100;
+    cout << "The percentage of the top " << k << " most high risk cases that resulted in death is: ";
+    cout << fixed << setprecision(2) << deathPercent << endl;
+}
+
+void Map::topkHospPercentFull(int k) {
+    vector<cases> topK = algorithm("2020/01/01", "2020/10/16", k);                  //hardcoded end date again
+    double hospSum = 0;
+    double hospPercent;
+    for (int i = 0; i < topK.size(); i++) {
+        if (topK[i].getHosp())
+            hospSum++;
+    }
+    hospPercent = hospSum / k;
+    hospPercent *= 100;
+    cout << "The percentage of the top " << k << " most high risk cases that resulted in hospitilization is: ";
+    cout << fixed << setprecision(2) << hospPercent << endl;
+}
+void Map::topkHospPercentDate(string date, int k) {
+    vector<cases> topK = algorithm(date, date, k);
+    double hospSum = 0;
+    double hospPercent;
+    for (int i = 0; i < topK.size(); i++) {
+        if (topK[i].getHosp())
+            hospSum++;
+    }
+    hospPercent = hospSum / k;
+    hospPercent *= 100;
+    cout << "The percentage of the top " << k << " most high risk cases that resulted in hospitilization is: ";
+    cout << fixed << setprecision(2) << hospPercent << endl;
+}
+
+void Map::topkICUPercentFull(int k) {
+    vector<cases> topK = algorithm("2020/01/01", "2020/10/16", k);
+    double ICUSum = 0;
+    double ICUPercent;
+    for (int i = 0; i < topK.size(); i++) {
+        if (topK[i].getHosp())
+            ICUSum++;
+    }
+    ICUPercent = ICUSum / k;
+    ICUPercent *= 100;
+    cout << "The percentage of the top " << k << " most high risk cases that resulted in hospitalization is: ";
+    cout << fixed << setprecision(2) << ICUPercent;
+}
+void Map::topkICUPercentDate(string date, int k) {
+    vector<cases> topK = algorithm(date, date, k);
+    double ICUSum = 0;
+    double ICUPercent;
+    for (int i = 0; i < topK.size(); i++) {
+        if (topK[i].getHosp())
+            ICUSum++;
+    }
+    ICUPercent = ICUSum / k;
+    ICUPercent *= 100;
+    cout << "The percentage of the top " << k << " most high risk cases that resulted in hospitalization is: ";
+    cout << fixed << setprecision(2) << ICUPercent;
+}
+
+
 
 int main()  {
     Map covidMap;
 
     string line;    //dummy first line
-    ifstream file1("COVID-19_Case_Surveillance_Public_Use_Data.csv");      //need filepath
-    //ifstream file1("/Users/jkim210/Documents/text.csv");                                          //my small tester file
+    //ifstream file1("COVID-19_Case_Surveillance_Public_Use_Data.csv");      //need filepath
+    ifstream file1("/Users/jkim210/Documents/text.csv");                                          //my small tester file
     string a;       //date
     string b;
     string c;
@@ -798,12 +1253,13 @@ int main()  {
         }
     }
     else
-        cout << "cannot open file" << "\n";
+        cout << "cannot open file";
+
+    //CovidHeap covidHeap(covidMap);
 
     //menu options
 
     bool runLoop = true;
-
 
     int choice;
     int choice2;
@@ -812,9 +1268,16 @@ int main()  {
     //cin >> choice;
     //cin.get();
 
+    vector<cases> vec = covidMap.algorithm("2020/01/01", "2020/10/16", 2);
+    for (int i = 0; i < vec.size(); i++) {
+        cout << vec[i].getDate() << "\n";
+    }
+
+    covidMap.topkDeathPercentFull(2);
+
     //if (choice == 0)
     //    runLoop = false;
-    cout << "COVID-19 Data Visualizer" << "\n\n";
+    /*cout << "COVID-19 Data Visualizer" << "\n\n";
     do {
 
         cout << "Press 1 if you're searching for data from a specific date" << "\n";
@@ -959,7 +1422,7 @@ int main()  {
 
                 switch (choice2) {
                     case 1:
-                        cout << "Number of cases in the US is" << ": "
+                        cout << "Number of cases between " << date1 << " and " << date2 << ": "
                              << covidMap.casesOverTime(date1, date2) << "\n\n";
                         break;
                     case 2:
@@ -1005,5 +1468,5 @@ int main()  {
                 break;
         }
     }
-    while (runLoop);
+    while (runLoop);*/
 }
