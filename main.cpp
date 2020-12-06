@@ -747,6 +747,7 @@ private:
     void insertDate(unordered_map<bool, vector<cases>>& dateMap, string date); //pass in a specific date from the CovidMap as a parameter to create a date object and insert allof the cases.
     //fills the vector with the top k most at risk cases from the full data set.
     void topkFull(vector<cases>& caseVect, int k);
+    void topkDate(vector<cases>& caseVect, int k, string d);
     
 public:
     //Constructor
@@ -759,7 +760,7 @@ public:
     void topkDeathPercentDate(string date, int k);
 
     void topkHospPercentFull(int k);
-    void topkDeathPercentDate(string date, int k);
+    void topkHospPercentDate(string date, int k);
 
     void topkICUPercentFull(int k);
     void topkICUPercentDate(string date, int k);
@@ -786,7 +787,19 @@ void CovidHeap::topkDeathPercentFull(int k) {
 
 void CovidHeap::topkDeathPercentDate(string date, int k) {
     vector<cases> caseVect;
-    
+    topkDate(caseVect, k, date);
+    double deathSum = 0;
+    double deathPercent = 0;
+    for (auto iter = caseVect.begin(); iter != caseVect.end(); iter++) {
+        if (iter->getDeath) {
+            deathSum++;
+        }
+    }
+
+    deathPercent = deathSum / k;
+    deathPercent *= 100;
+    cout << "The percentage of the top " << k << " most high risk cases that resulted in death is: ";
+    cout << fixed << setprecision(2) << deathPercent << endl;
 }
 
 void CovidHeap::topkHospPercentFull(int k) {
@@ -806,8 +819,21 @@ void CovidHeap::topkHospPercentFull(int k) {
     cout << fixed << setprecision(2) << hospPercent << endl;
 }
 
-void CovidHeap::topkDeathPercentDate(string date, int k) {
+void CovidHeap::topkHospPercentDate(string date, int k) {
+    vector<cases> caseVect;
+    topkDate(caseVect, k, date);
+    double hospSum = 0;
+    double hospPercent = 0;
+    for (auto iter = caseVect.begin(); iter != caseVect.end(); iter++) {
+        if (iter->getHosp()) {
+            hospSum++;
+        }
+    }
 
+    hospPercent = hospSum / k;
+    hospPercent *= 100;
+    cout << "The percentage of the top " << k << " most high risk cases that resulted in hospitilization is: ";
+    cout << fixed << setprecision(2) << hospPercent << endl;
 }
 
 void CovidHeap::topkICUPercentFull(int k) {
@@ -826,8 +852,20 @@ void CovidHeap::topkICUPercentFull(int k) {
     cout << fixed << setprecision(2) << ICUPercent;
 }
 
-void topkICUPercentDate(string date, int k) {
-
+void CovidHeap::topkICUPercentDate(string date, int k) {
+    vector<cases> caseVect;
+    topkDate(caseVect, k, date);
+    double ICUSum = 0;
+    double ICUPercent = 0;
+    for (auto iter = caseVect.begin(); iter != caseVect.end(); iter++) {
+        if (iter->getIcu()) {
+            ICUSum++;
+        }
+    }
+    ICUPercent = ICUSum / k;
+    ICUPercent *= 100;
+    cout << "The percentage of the top " << k << " most high risk cases that resulted in hospitalization is: ";
+    cout << fixed << setprecision(2) << ICUPercent;
 }
 
 CovidHeap::CovidHeap(Map& covidMap) {
@@ -868,6 +906,16 @@ void CovidHeap::topkFull(vector<cases>& caseVect, int k) {
     }
 }
 
+void CovidHeap::topkDate(vector<cases>& caseVect, int k, string d) {
+
+    //Find the correct date in the date heap
+    for (auto iter = dateHeap.begin(); iter != dateHeap.end(); iter++) {
+        if (iter->date == d) {
+            iter->topkDate(caseVect, k);
+        }
+    }
+  
+}
 
 
 int main()  {
