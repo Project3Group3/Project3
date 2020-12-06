@@ -7,6 +7,7 @@
 #include <queue>
 #include <stack>
 #include <functional>
+#include <iomanip>
 using namespace std;
 
 class cases {
@@ -38,8 +39,20 @@ public:
         death = dt;
         medcond = m;
         calculateRisk();
+        risk = 0;
         ID = IDcntr;
         IDcntr++;
+    }
+    cases() {
+        date = "";
+        age = "";
+        sex = "";
+        hosp = false;
+        icu = false;
+        death = false;
+        medcond = false;
+        risk = 0;
+        ID = -1;
     }
     string getDate();
     bool getDeath();
@@ -323,6 +336,12 @@ string dateStepping(string date) {                    //adds 1 to date and retur
 class Map {
 private:
     unordered_map<string, unordered_map<bool, vector<cases>>> map;
+    
+    //returns a vector of the top k most at risk cases for the whole data set
+    void topkFull(vector<cases>& caseVect, int k);
+    //returns a vector of the top k most at risk cases for a single day
+    void topkDate(vector<cases>& caseVect, int k);
+
 public:
     void insertCase(cases c);
 
@@ -668,11 +687,17 @@ class Date {
 private:
     string date;
     int deaths;
-    priority_queue<cases, vector<cases>, cases> caseHeap; //heap that stores the cases by their risk factor
+    vector<cases> caseHeap; //heap that stores the cases by their risk factor
     stack<cases> removeStack; //objects that are removed from the heap are stored here to be added back after the operation is finished.
-
+    //fills a heap with the top k most at risk cases from a single date
+    void topkDate(vector<cases>& heap, int k);
+    friend class CovidHeap;
 public:
     Date(string date, int deaths); //initializes a date with the date, deaths, and empty heap and stack.
+    Date() {
+        date = "";
+        deaths = 0;
+    }
     void insertCase(cases& c); //insert an individual case into the date's case heap. Called from a CovidHeap object.
 
 
@@ -680,6 +705,7 @@ public:
     bool operator()(const Date& date1, const Date& date2) {
         return date1.deaths > date2.deaths;
     }
+    
 };
 
 Date::Date(string date, int deaths) {
@@ -688,33 +714,128 @@ Date::Date(string date, int deaths) {
 }
 
 void Date::insertCase(cases& c) {
-    caseHeap.push(c);
+    caseHeap.push_back(c);
+    push_heap(caseHeap.begin(), caseHeap.end(), cases());
 }
 
+void Date::topkDate(vector<cases>& heap, int k) {
+    int cntr = 0;
+    while (cntr < k && !caseHeap.empty()) {
+        //while the case heap is not empty, pop the top k cases off and put them in the return heap
+        removeStack.push(caseHeap.front());
+        heap.push_back(caseHeap.front());
+        push_heap(heap.begin(), heap.end(), cases());
+        pop_heap(caseHeap.begin(), caseHeap.end(), cases());
+        caseHeap.pop_back();
+        cntr++;
+    }
+    while (!removeStack.empty()) {
+        //empty the removestack back into the heap
+        caseHeap.push_back(removeStack.top());
+        push_heap(caseHeap.begin(), caseHeap.end(), cases());
+        removeStack.pop();
+    }
+}
 
 //The CovidHeap class contains a heap of date heaps organized by deaths on a given date.
 class CovidHeap {
 private:
-    priority_queue<Date, vector<Date>, Date> dateHeap; //contains a heap of dates sorted by deaths
-    stack<Date> removeStack; //objects removed are stored here to be added back post-operation.
+    vector<Date> dateHeap; //contains a heap of dates sorted by death
+
 
     //Status: Finished
-    void insertDate(unordered_map<bool, vector<cases>>& dateMap, string date); //pass in a specific date from the CovidMap as a parameter to create a date object and insert all of the cases.
+    void insertDate(unordered_map<bool, vector<cases>>& dateMap, string date); //pass in a specific date from the CovidMap as a parameter to create a date object and insert allof the cases.
+    //fills the vector with the top k most at risk cases from the full data set.
+    void topkFull(vector<cases>& caseVect, int k);
+    
 public:
     //Constructor
-    //Status: Finished
     CovidHeap(Map& covidMap);
 
     //publicly accessible algorithms
-    
+
+    //these functions calculate and display the percent of cases resulting in deaths for the top k cases
+    void topkDeathPercentFull(int k);
+    void topkDeathPercentDate(string date, int k);
+
+    void topkHospPercentFull(int k);
+    void topkDeathPercentDate(string date, int k);
+
+    void topkICUPercentFull(int k);
+    void topkICUPercentDate(string date, int k);
     
 };
+
+void CovidHeap::topkDeathPercentFull(int k) {
+    vector<cases> caseVect;
+    topkFull(caseVect, k);
+    double deathSum = 0;
+    double deathPercent = 0;
+    for (auto iter = caseVect.begin(); iter != caseVect.end(); iter++) {
+        //if the case resulted in death, increment the death counter
+        if (iter->getDeath) {
+            deathSum++;
+        }
+    }
+    
+    deathPercent = deathSum / k;
+    deathPercent *= 100;
+    cout << "The percentage of the top " << k << " most high risk cases that resulted in death is: ";
+    cout << fixed << setprecision(2) << deathPercent << endl;
+}
+
+void CovidHeap::topkDeathPercentDate(string date, int k) {
+    vector<cases> caseVect;
+    
+}
+
+void CovidHeap::topkHospPercentFull(int k) {
+    vector<cases> caseVect;
+    topkFull(caseVect, k);
+    double hospSum = 0;
+    double hospPercent = 0;
+    for (auto iter = caseVect.begin(); iter != caseVect.end(); iter++) {
+        if (iter->getHosp()) {
+            hospSum++;
+        }
+    }
+
+    hospPercent = hospSum / k;
+    hospPercent *= 100;
+    cout << "The percentage of the top " << k << " most high risk cases that resulted in hospitilization is: ";
+    cout << fixed << setprecision(2) << hospPercent << endl;
+}
+
+void CovidHeap::topkDeathPercentDate(string date, int k) {
+
+}
+
+void CovidHeap::topkICUPercentFull(int k) {
+    vector<cases> caseVect;
+    topkFull(caseVect, k);
+    double ICUSum = 0;
+    double ICUPercent = 0;
+    for (auto iter = caseVect.begin(); iter != caseVect.end(); iter++) {
+        if (iter->getIcu()) {
+            ICUSum++;
+        }
+    }
+    ICUPercent = ICUSum / k;
+    ICUPercent *= 100;
+    cout << "The percentage of the top " << k << " most high risk cases that resulted in hospitalization is: ";
+    cout << fixed << setprecision(2) << ICUPercent;
+}
+
+void topkICUPercentDate(string date, int k) {
+
+}
 
 CovidHeap::CovidHeap(Map& covidMap) {
     //iterate through the top level of the covid map and call insert Date for each member
     for (auto iter = covidMap.map.begin(); iter != covidMap.map.end(); iter++) {
         insertDate(iter->second, iter->first);
     }
+    make_heap(dateHeap.begin(), dateHeap.end(), Date());
 }
 
 void CovidHeap::insertDate(unordered_map<bool, vector<cases>>& dateMap, string date) {
@@ -729,15 +850,31 @@ void CovidHeap::insertDate(unordered_map<bool, vector<cases>>& dateMap, string d
         newDate.insertCase(*iter);
     }
 
-    dateHeap.push(newDate);
+    dateHeap.push_back(newDate);
 }
+
+void CovidHeap::topkFull(vector<cases>& caseVect, int k) {
+    vector<cases> heap;
+    //Get the top k cases from each date onto a heap
+    for (auto iter = dateHeap.begin(); iter != dateHeap.end(); iter++) {
+        iter->topkDate(heap, k);
+    }
+    int cntr = 0;
+    while (cntr < k &&  !heap.empty()) {
+        caseVect.push_back(heap.front());
+        pop_heap(heap.begin(), heap.end(), cases());
+        heap.pop_back();
+        cntr++;
+    }
+}
+
 
 
 int main()  {
     Map covidMap;
 
     string line;    //dummy first line
-    ifstream file1("/Users/jkim210/Documents/COVID-19_Case_Surveillance_Public_Use_Data.csv");      //need filepath
+    ifstream file1("COVID-19_Case_Surveillance_Public_Use_Data.csv");      //need filepath
     //ifstream file1("/Users/jkim210/Documents/text.csv");                                          //my small tester file
     string a;       //date
     string b;
@@ -809,6 +946,8 @@ int main()  {
     }
     else
         cout << "cannot open file";
+
+    //CovidHeap covidHeap(covidMap);
 
     //menu options
 
