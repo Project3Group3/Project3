@@ -8,6 +8,7 @@
 #include <stack>
 #include <functional>
 #include <iomanip>
+#include <chrono>
 using namespace std;
 
 class cases {
@@ -22,7 +23,8 @@ private:
     bool risk;                   //holds the patient's risk factor
     int ID;                     //Holds an ID for the patient to differentiate cases
 
-    static int IDcntr;      //Contains a counter 
+    
+    friend class CovidHeap;
 
     //Added by Ryan Roth on 12/3/2020
     //Name: calculateRisk()
@@ -30,6 +32,8 @@ private:
     void calculateRisk();
 
 public:
+    static int IDcntr;      //Contains a counter for the number of cases in the map
+
     cases(string d, string a, string s, bool h, bool i, bool dt, bool m) {
         date = d;
         age = a;
@@ -71,6 +75,7 @@ public:
             return case1.risk > case2.risk;
         }
     }
+
 };
 string cases::getDate() {
     return date;
@@ -168,21 +173,80 @@ void cases::calculateRisk() { //Create a more complex Risk caclulation function
     }
 }
 
-int dateSubtraction(string date1, string date2) {       //hacky because doesnt take year into account
-    int month1 = stoi(date1.substr(5,2));
-    int day1 = stoi(date1.substr(8,2));
-    int month2 = stoi(date2.substr(5,2));
-    int day2 = stoi(date2.substr(8,2));
-    if (month1 > month2) {
+int dateSubtraction(string date1, string date2) {  
+    int year1 = stoi(date1.substr(0, 4));
+    int month1 = stoi(date1.substr(5, 2));
+    int day1 = stoi(date1.substr(8, 2));
+    int year2 = stoi(date2.substr(0, 4));
+    int month2 = stoi(date2.substr(5, 2));
+    int day2 = stoi(date2.substr(8, 2));
+    if (year1 > year2) {
+        swap(year1, year2);
         swap(month1, month2);
         swap(day1, day2);
     }
-    else if (day1 > day2)
+    else if (month1 > month2&& year1 == year2) {
+        swap(month1, month2);
+        swap(day1, day2);
+    }
+    else if (day1 > day2&& year1 == year2 && month1 == month2)
         swap(day1, day2);
 
     int sum = 0;
-    while (month1 < month2) {
-        switch (month1) {
+    int yearDiff = 0;
+    if (year2 > year1) {
+        yearDiff = year2 - year1;
+
+        for (int i = 0; i < yearDiff; i++) {
+            if ((year1 + i) % 4 == 0)
+                sum += 366;
+            else
+                sum += 365;
+        }
+
+        while (month1 > month2) {
+            switch (month1) {
+            case 1:
+                sum -= 31;
+                break;
+            case 2:
+                sum -= 29;
+                break;
+            case 3:
+                sum -= 31;
+                break;
+            case 4:
+                sum -= 30;
+                break;
+            case 5:
+                sum -= 31;
+                break;
+            case 6:
+                sum -= 30;
+                break;
+            case 7:
+                sum -= 31;
+                break;
+            case 8:
+                sum -= 31;
+                break;
+            case 9:
+                sum -= 30;
+                break;
+            case 10:
+                sum -= 31;
+                break;
+            case 11:
+                sum -= 30;
+                break;
+            case 12:
+                sum -= 31;
+                break;
+            }
+            month1--;
+        }
+        while (month1 < month2) {
+            switch (month1) {
             case 1:
                 sum += 31;
                 break;
@@ -219,9 +283,54 @@ int dateSubtraction(string date1, string date2) {       //hacky because doesnt t
             case 12:
                 sum += 31;
                 break;
+            }
+            month1++;
         }
-        month1++;
     }
+    else {
+        while (month1 < month2) {
+            switch (month1) {
+            case 1:
+                sum += 31;
+                break;
+            case 2:
+                sum += 29;
+                break;
+            case 3:
+                sum += 31;
+                break;
+            case 4:
+                sum += 30;
+                break;
+            case 5:
+                sum += 31;
+                break;
+            case 6:
+                sum += 30;
+                break;
+            case 7:
+                sum += 31;
+                break;
+            case 8:
+                sum += 31;
+                break;
+            case 9:
+                sum += 30;
+                break;
+            case 10:
+                sum += 31;
+                break;
+            case 11:
+                sum += 30;
+                break;
+            case 12:
+                sum += 31;
+                break;
+            }
+            month1++;
+        }
+    }
+
     sum = sum - day1 + 1 + day2;
     return sum;
 }
@@ -743,7 +852,6 @@ private:
     vector<Date> dateHeap; //contains a heap of dates sorted by death
 
 
-    //Status: Finished
     void insertDate(unordered_map<bool, vector<cases>>& dateMap, string date); //pass in a specific date from the CovidMap as a parameter to create a date object and insert allof the cases.
     //fills the vector with the top k most at risk cases from the full data set.
     void topkFull(vector<cases>& caseVect, int k);
@@ -764,6 +872,8 @@ public:
 
     void topkICUPercentFull(int k);
     void topkICUPercentDate(string date, int k);
+
+    bool kValid(int k);
     
 };
 
@@ -917,6 +1027,14 @@ void CovidHeap::topkDate(vector<cases>& caseVect, int k, string d) {
   
 }
 
+bool CovidHeap::kValid(int k) {
+    if (k < 1 || k >= cases::IDcntr) {
+        cout << "Input is invalid. Please enter a number between 1 and " << cases::IDcntr << endl;
+        return false;
+    } 
+    return true;
+}
+
 
 int main()  {
     Map covidMap;
@@ -995,7 +1113,7 @@ int main()  {
     else
         cout << "cannot open file";
 
-    //CovidHeap covidHeap(covidMap);
+    CovidHeap covidHeap(covidMap);
 
     //menu options
 
@@ -1035,6 +1153,7 @@ int main()  {
                 cout << "5: The effects of pre-existing medical conditions on cases" << "\n";
                 cout << "6: The effects of hospitalizations on cases" << "\n";
                 cout << "7: The effects of being admitted to the ICU on cases" << "\n";
+                cout << "8: The top k most at risk cases" << endl;
 
                 cin >> choice2;
                 switch (choice2) {
@@ -1075,6 +1194,38 @@ int main()  {
                              << covidMap.casesWithICU(date1, date1) << "\n";
                         cout << "Number of deaths of cases that were admitted to the ICU on " << date1 << ": "
                              << covidMap.deathsWithICU(date1, date1) << "\n\n";
+                        break;
+                    case 8:
+                        int k;
+                        cout << "Please enter a number k between 1 and " << cases::IDcntr - 1 << ": " << endl;
+                        cin >> k;
+                        bool isValid = covidHeap.kValid(k);
+                        if (isValid) {
+                            //check if the input k is valid. If it is, run the processes and desired outputs
+
+                            //call functions using the map
+                            cout << "The output using the map stucture is: " << endl;
+                            auto startMap = chrono::high_resolution_clock::now();
+                            //run the map algorithms
+
+                            auto stopMap = chrono::high_resolution_clock::now();
+
+                            auto durationMap = chrono::duration_cast<chrono::microseconds>(stopMap - startMap);
+                            cout << "The time elapsed to calculate the map output was: " << durationMap.count() << " microseconds" << endl;
+
+                            //call functions using the heap
+                            cout << "The output using the heap structure is: " << endl;
+                            auto startHeap = chrono::high_resolution_clock::now();
+                            covidHeap.topkDeathPercentDate(date1, k);
+                            covidHeap.topkHospPercentDate(date1, k);
+                            covidHeap.topkICUPercentDate(date1, k);
+                            auto stopHeap = chrono::high_resolution_clock::now();
+
+                            auto durationHeap = chrono::duration_cast<chrono::microseconds>(stopMap - startMap);
+
+                            cout << "The time elapsed to calculate the heap output was: " << durationHeap.count() << "microseconds" << endl;
+
+                        }
                         break;
                 }
 
@@ -1151,6 +1302,7 @@ int main()  {
                 cout << "5: The effects of pre-existing medical conditions on cases" << "\n";
                 cout << "6: The effects of hospitalizations on cases" << "\n";
                 cout << "7: The effects of being admitted to the ICU on cases" << "\n";
+                cout << "8: The top k most at risk cases" << endl;
                 cin >> choice2;
 
                 switch (choice2) {
@@ -1196,6 +1348,38 @@ int main()  {
                         cout << "Number of deaths of cases that were admitted to the ICU between " << date1 << " and "
                              << date2 << ": "
                              << covidMap.deathsWithICU(date1, date2) << "\n\n";
+                        break;
+                    case 8:
+                        int k;
+                        cout << "Please enter a number k between 1 and " << cases::IDcntr - 1 << ": " << endl;
+                        cin >> k;
+                        bool isValid = covidHeap.kValid(k);
+                        if (isValid) {
+                            //check if the input k is valid. If it is, run the processes and desired outputs
+                   
+                            //call functions using the map
+                            cout << "The output using the map stucture is: " << endl;
+                            auto startMap = chrono::high_resolution_clock::now();
+                            //run the map algorithms
+
+                            auto stopMap = chrono::high_resolution_clock::now();
+
+                            auto durationMap = chrono::duration_cast<chrono::microseconds>(stopMap - startMap);
+                            cout << "The time elapsed to calculate the map output was: " << durationMap.count() << " microseconds" << endl;
+
+                            //call functions using the heap
+                            cout << "The output using the heap structure is: " << endl;
+                            auto startHeap = chrono::high_resolution_clock::now();
+                            covidHeap.topkDeathPercentFull(k);
+                            covidHeap.topkHospPercentFull(k);
+                            covidHeap.topkICUPercentFull(k);
+                            auto stopHeap = chrono::high_resolution_clock::now();
+                            
+                            auto durationHeap = chrono::duration_cast<chrono::microseconds>(stopMap - startMap);
+
+                            cout << "The time elapsed to calculate the heap output was: " << durationHeap.count() << "microseconds" << endl;
+                            
+                        }
                         break;
                 }
                 break;
