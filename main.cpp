@@ -1060,7 +1060,7 @@ void CovidHeap::topkDeathPercentFull(int k) {
         }
     }
     
-    deathPercent = deathSum / k;
+    deathPercent = deathSum / caseVect.size();
     deathPercent *= 100;
     cout << "The percentage of the top " << k << " most high risk cases that resulted in death is: ";
     cout << fixed << setprecision(2) << deathPercent << endl;
@@ -1077,7 +1077,7 @@ void CovidHeap::topkDeathPercentDate(string date, int k) {
         }
     }
 
-    deathPercent = deathSum / k;
+    deathPercent = deathSum / caseVect.size();
     deathPercent *= 100;
     cout << "The percentage of the top " << k << " most high risk cases that resulted in death is: ";
     cout << fixed << setprecision(2) << deathPercent << endl;
@@ -1094,7 +1094,7 @@ void CovidHeap::topkHospPercentFull(int k) {
         }
     }
 
-    hospPercent = hospSum / k;
+    hospPercent = hospSum / caseVect.size();
     hospPercent *= 100;
     cout << "The percentage of the top " << k << " most high risk cases that resulted in hospitilization is: ";
     cout << fixed << setprecision(2) << hospPercent << endl;
@@ -1111,7 +1111,7 @@ void CovidHeap::topkHospPercentDate(string date, int k) {
         }
     }
 
-    hospPercent = hospSum / k;
+    hospPercent = hospSum / caseVect.size();
     hospPercent *= 100;
     cout << "The percentage of the top " << k << " most high risk cases that resulted in hospitilization is: ";
     cout << fixed << setprecision(2) << hospPercent << endl;
@@ -1127,7 +1127,7 @@ void CovidHeap::topkICUPercentFull(int k) {
             ICUSum++;
         }
     }
-    ICUPercent = ICUSum / k;
+    ICUPercent = ICUSum / caseVect.size();
     ICUPercent *= 100;
     cout << "The percentage of the top " << k << " most high risk cases that resulted in intensive care is: ";
     cout << fixed << setprecision(2) << ICUPercent << endl;
@@ -1143,7 +1143,7 @@ void CovidHeap::topkICUPercentDate(string date, int k) {
             ICUSum++;
         }
     }
-    ICUPercent = ICUSum / k;
+    ICUPercent = ICUSum / caseVect.size();
     ICUPercent *= 100;
     cout << "The percentage of the top " << k << " most high risk cases that resulted in intensive care is: ";
     cout << fixed << setprecision(2) << ICUPercent << endl;
