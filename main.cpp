@@ -1566,7 +1566,7 @@ int main()  {
                             
                             auto durationHeap = chrono::duration_cast<chrono::milliseconds>(stopHeap - startHeap);
 
-                            cout << "The time elapsed to calculate the heap output was: " << durationHeap.count() << "milliseconds" << endl;
+                            cout << "The time elapsed to calculate the heap output was: " << durationHeap.count() << " milliseconds" << endl;
                             cout << endl;
                             
                         }
