@@ -9,6 +9,7 @@
 #include <functional>
 #include <iomanip>
 #include <chrono>
+#include <algorithm>
 using namespace std;
 
 class cases {
@@ -20,7 +21,7 @@ private:
     bool icu;                   //""
     bool death;                 //true if death, false otherwise
     bool medcond;               //true if has underlying condition
-    bool risk;                   //holds the patient's risk factor
+    int risk;                   //holds the patient's risk factor
     int ID;                     //Holds an ID for the patient to differentiate cases
 
     
@@ -80,25 +81,30 @@ public:
     bool equals(cases cases2);
     
     bool operator()(const cases& case1, const cases& case2) { //compares two cases, returns true if case1 > case2 signifying that case1 has a higher risk factor.
-        if (abs(case1.risk - case2.risk) < 0.00000001) { //the risk factors are equal, sort by greatest ID
+        if (case1.risk == case2.risk) { //the risk factors are equal, sort by greatest ID
             return case1.ID > case2.ID;
         }
         else { //if the risks are not equal, return true when risk of case1 is greater
             return case1.risk > case2.risk;
         }
     }
+    friend class cases_heap;
+    friend class Map;
+};
 
+struct cases_heap {
+    bool operator()(const cases& case1, const cases& case2) { //uses less than operators for sorting the heap data structure
+        if (case1.risk == case2.risk) {
+            return case1.ID < case2.ID;
+        }
+        else {
+            return case1.risk < case2.risk;
+        }
+    }
 };
 
 bool cases::equals(cases cases2) {
-    return (this->getDate() == cases2.getDate() &&
-        this->getSex() == cases2.getSex() &&
-        this->getAge() == cases2.getAge() &&
-        this->getDeath() == cases2.getDeath() &&
-        this->getHosp() == cases2.getHosp() &&
-        this->getIcu() == cases2.getIcu() &&
-        this->getMedcond() == cases2.getMedcond() &&
-        this->getRisk() == cases2.getRisk());
+    return (this->ID == cases2.ID);
 }
 
 string cases::getDate() {
@@ -995,24 +1001,30 @@ Date::Date(string date, int deaths) {
 
 void Date::insertCase(cases& c) {
     caseHeap.push_back(c);
-    push_heap(caseHeap.begin(), caseHeap.end(), cases());
+    if (caseHeap.size() == 1) { //make a heap
+        make_heap(caseHeap.begin(), caseHeap.end(), cases_heap());
+        sort_heap(caseHeap.begin(), caseHeap.end(), cases_heap());
+    }
+    push_heap(caseHeap.begin(), caseHeap.end(), cases_heap());
+
 }
 
 void Date::topkDate(vector<cases>& heap, int k) {
     int cntr = 0;
+ 
     while (cntr < k && !caseHeap.empty()) {
         //while the case heap is not empty, pop the top k cases off and put them in the return heap
         removeStack.push(caseHeap.front());
         heap.push_back(caseHeap.front());
-        push_heap(heap.begin(), heap.end(), cases());
-        pop_heap(caseHeap.begin(), caseHeap.end(), cases());
+        push_heap(heap.begin(), heap.end(), cases_heap());
+        pop_heap(caseHeap.begin(), caseHeap.end(), cases_heap());
         caseHeap.pop_back();
         cntr++;
     }
     while (!removeStack.empty()) {
         //empty the removestack back into the heap
         caseHeap.push_back(removeStack.top());
-        push_heap(caseHeap.begin(), caseHeap.end(), cases());
+        push_heap(caseHeap.begin(), caseHeap.end(), cases_heap());
         removeStack.pop();
     }
 }
@@ -1021,7 +1033,6 @@ void Date::topkDate(vector<cases>& heap, int k) {
 class CovidHeap {
 private:
     vector<Date> dateHeap; //contains a heap of dates sorted by death
-
 
     void insertDate(unordered_map<bool, vector<cases>>& dateMap, string date); //pass in a specific date from the CovidMap as a parameter to create a date object and insert allof the cases.
     //fills the vector with the top k most at risk cases from the full data set.
@@ -1092,6 +1103,7 @@ void CovidHeap::topkHospPercentFull(int k) {
         if (iter->getHosp()) {
             hospSum++;
         }
+        
     }
 
     hospPercent = hospSum / caseVect.size();
@@ -1154,7 +1166,9 @@ CovidHeap::CovidHeap(Map& covidMap) {
     for (auto iter = covidMap.map.begin(); iter != covidMap.map.end(); iter++) {
         insertDate(iter->second, iter->first);
     }
+
     make_heap(dateHeap.begin(), dateHeap.end(), Date());
+    sort_heap(dateHeap.begin(), dateHeap.end(), Date());
 }
 
 void CovidHeap::insertDate(unordered_map<bool, vector<cases>>& dateMap, string date) {
@@ -1181,7 +1195,7 @@ void CovidHeap::topkFull(vector<cases>& caseVect, int k) {
     int cntr = 0;
     while (cntr < k &&  !heap.empty()) {
         caseVect.push_back(heap.front());
-        pop_heap(heap.begin(), heap.end(), cases());
+        pop_heap(heap.begin(), heap.end(), cases_heap());
         heap.pop_back();
         cntr++;
     }
